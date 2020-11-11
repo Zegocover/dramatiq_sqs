@@ -135,10 +135,15 @@ class SQSBroker(dramatiq.Broker):
 
         self.logger.debug("Enqueueing message %r on queue %r.", message.message_id, queue_name)
         self.emit_before("enqueue", message, delay)
-        queue.send_message(
-            MessageBody=encoded_message,
-            DelaySeconds=delay_seconds,
-        )
+        send_message_args = {
+            "MessageBody": encoded_message,
+            "DelaySeconds": delay_seconds
+        }
+        message_group_id = message.options.get("message_group_id")
+        if message_group_id is not None:
+            send_message_args["MessageGroupId"] = message_group_id
+
+        queue.send_message({**queue_args})
         self.emit_after("enqueue", message, delay)
         return message
 
